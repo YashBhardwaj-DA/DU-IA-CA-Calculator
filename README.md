@@ -2,7 +2,7 @@
 
 A single-file, no-login tool for Delhi University NEP students to track their **Internal Assessment (IA)** and **Tutorial/Continuous Assessment** marks across the semester — because most colleges never show this breakdown to students until results are already out.
 
-**Live tool:** _add your deployed URL here_
+**Live tool:** (https://du-ia-ca-calculator.netlify.app/)
 
 ---
 
