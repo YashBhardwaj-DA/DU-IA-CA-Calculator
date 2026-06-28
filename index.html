@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DU IA/CA Calculator — Internal Assessment Tracker</title>
+<meta name="description" content="Track your Internal Assessment and Continuous Assessment marks across DU NEP papers. No login, no server, fully local to your device.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DU IA/CA Calculator
+   Visual family matches Clark's DU Maths Predictor: deep navy
+   background, amber/gold accent, card-based wizard steps.
+   ============================================================ */
+:root{
+  --bg:#0B0E16;
+  --bg-soft:#11151F;
+  --surface:#161B27;
+  --surface-2:#1C2230;
+  --rule:#2A3142;
+  --ink:#EDEFF4;
+  --ink-soft:#8C93A6;
+  --ink-faint:#5C6378;
+  --amber:#F2B84B;
+  --amber-strong:#FFD27A;
+  --green:#3FAE7A;
+  --green-bg:#13261E;
+  --red:#E2675C;
+  --red-bg:#2A1818;
+  --blue:#5B9DFF;
+  --font-display:"Inter",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --radius:12px;
+  --shadow:0 1px 2px rgba(0,0,0,0.3),0 12px 32px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-display);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+@media (prefers-reduced-motion: reduce){*{animation-duration:0.001ms !important;transition-duration:0.001ms !important;}}
+button,select,input{font-family:inherit;}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px 60px;}
+
+/* ===== HEADER ===== */
+.app-header{
+  display:flex;align-items:center;gap:14px;justify-content:space-between;
+  padding:22px 0;border-bottom:1px solid var(--rule);flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{
+  width:38px;height:38px;border-radius:9px;background:var(--amber);
+  color:#1A1300;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-weight:700;font-size:18px;flex-shrink:0;
+}
+.brand-text h1{margin:0;font-size:16px;font-weight:700;}
+.brand-text p{margin:0;font-size:12px;color:var(--ink-soft);}
+.header-actions{display:flex;gap:10px;}
+
+/* ===== STEP NAV ===== */
+.steps{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:var(--radius);
+  overflow:hidden;margin:24px 0;
+}
+.step{
+  background:var(--surface);padding:14px 8px;text-align:center;cursor:pointer;
+  border:none;color:var(--ink-soft);font-weight:600;font-size:13px;
+  display:flex;flex-direction:column;gap:4px;align-items:center;
+  transition:background 0.15s,color 0.15s;
+}
+.step .num{
+  width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ink-faint);
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  font-family:var(--font-mono);
+}
+.step.is-active{background:var(--surface-2);color:var(--amber-strong);}
+.step.is-active .num{border-color:var(--amber-strong);color:var(--amber-strong);}
+.step.is-done{color:var(--green);}
+.step.is-done .num{border-color:var(--green);color:var(--green);}
+.step:disabled{cursor:not-allowed;opacity:0.55;}
+
+/* ===== CARD ===== */
+.card{
+  background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);
+  padding:24px;box-shadow:var(--shadow);
+}
+.card-title{
+  display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;
+  color:var(--amber-strong);margin:0 0 18px;
+}
+
+/* ===== FORM ELEMENTS ===== */
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:620px){.field-grid{grid-template-columns:1fr;}}
+.field label{
+  display:block;font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:7px;
+}
+.field input,.field select{
+  width:100%;padding:11px 13px;border-radius:8px;border:1px solid var(--rule);
+  background:var(--bg-soft);color:var(--ink);font-size:14px;
+}
+.field input::placeholder{color:var(--ink-faint);}
+.field input:focus,.field select:focus{border-color:var(--amber);}
+.field-note{font-size:12px;color:var(--ink-faint);margin-top:16px;display:flex;gap:6px;align-items:flex-start;}
+
+/* ===== BUTTONS ===== */
+.btn{
+  font-size:13px;font-weight:700;padding:10px 18px;border-radius:8px;
+  border:1px solid var(--rule);background:transparent;color:var(--ink-soft);
+  cursor:pointer;transition:border-color 0.15s,color 0.15s;display:inline-flex;
+  align-items:center;gap:6px;
+}
+.btn:hover{border-color:var(--amber);color:var(--ink);}
+.btn-primary{
+  background:var(--amber);border-color:var(--amber);color:#1A1300;
+}
+.btn-primary:hover{background:var(--amber-strong);border-color:var(--amber-strong);color:#1A1300;}
+.btn-danger:hover{border-color:var(--red);color:var(--red);}
+.btn[disabled]{opacity:0.4;cursor:not-allowed;}
+.row-actions{display:flex;justify-content:space-between;align-items:center;margin-top:22px;flex-wrap:wrap;gap:10px;}
+.row-actions-right{display:flex;gap:10px;margin-left:auto;}
+
+/* ===== VIEWS ===== */
+.view{display:none;}
+.view.is-active{display:block;animation:fadeIn 0.18s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;}}
+
+/* ===== SUBJECT BUILDER ===== */
+.subject-form{
+  display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end;
+  margin-bottom:18px;
+}
+@media (max-width:700px){.subject-form{grid-template-columns:1fr 1fr;}}
+.legend{
+  background:var(--bg-soft);border:1px solid var(--rule);border-radius:8px;
+  padding:12px 14px;font-size:12px;color:var(--ink-soft);margin-bottom:18px;line-height:1.6;
+}
+.legend b{color:var(--ink);}
+.tag{
+  font-family:var(--font-mono);font-size:10.5px;font-weight:700;padding:2px 7px;
+  border-radius:5px;background:var(--surface-2);color:var(--amber-strong);
+}
+.subject-list{display:flex;flex-direction:column;gap:8px;}
+.subject-row{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--bg-soft);border:1px solid var(--rule);border-radius:8px;flex-wrap:wrap;
+}
+.subject-row .sname{font-weight:600;flex:1;min-width:140px;}
+.subject-row .meta{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{
+  font-family:var(--font-mono);font-size:10.5px;font-weight:700;padding:3px 8px;
+  border-radius:5px;background:var(--surface-2);color:var(--ink-soft);white-space:nowrap;
+}
+.chip.type-dsc,.chip.type-dse,.chip.type-ge{color:#9FC9FF;}
+.chip.type-aec,.chip.type-sec,.chip.type-vac{color:#B8E3C8;}
+.chip.comp-p{color:var(--ink-faint);}
+.remove-btn{
+  background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:18px;
+  line-height:1;padding:2px 6px;border-radius:6px;
+}
+.remove-btn:hover{color:var(--red);background:var(--red-bg);}
+.empty-state{
+  text-align:center;padding:36px 10px;color:var(--ink-faint);font-size:13px;
+}
+
+/* ===== MARKS ENTRY ===== */
+.paper-card{
+  border:1px solid var(--rule);border-radius:10px;padding:18px;margin-bottom:14px;background:var(--bg-soft);
+}
+.paper-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.paper-card-top h3{margin:0;font-size:15px;}
+.paper-card-top .chips{display:flex;gap:6px;}
+.skip-note{
+  font-size:12.5px;color:var(--ink-faint);font-style:italic;padding:8px 0;
+}
+.ia-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;}
+@media (max-width:620px){.ia-grid{grid-template-columns:1fr;}}
+.ia-field label{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;
+  color:var(--ink-soft);display:flex;justify-content:space-between;margin-bottom:6px;
+}
+.ia-field label .max{font-family:var(--font-mono);color:var(--ink-faint);text-transform:none;}
+.ia-field input{
+  width:100%;padding:9px 12px;border-radius:7px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink);font-size:14px;font-family:var(--font-mono);
+}
+.ia-field input:focus{border-color:var(--amber);}
+.ia-total{
+  display:flex;justify-content:space-between;align-items:center;padding-top:12px;
+  border-top:1px solid var(--rule);font-size:13px;
+}
+.ia-total .label{color:var(--ink-soft);font-weight:600;}
+.ia-total .value{font-family:var(--font-mono);font-weight:700;font-size:16px;}
+.ia-total .value.ok{color:var(--green);}
+.ia-total .value.over{color:var(--red);}
+
+.tut-grid{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px dashed var(--rule);}
+@media (max-width:480px){.tut-grid{grid-template-columns:1fr;}}
+.tut-grade{
+  font-family:var(--font-mono);font-weight:700;font-size:14px;padding:9px 14px;
+  border-radius:7px;background:var(--surface-2);min-width:64px;text-align:center;
+}
+
+/* ===== MARKSHEET (dashboard) ===== */
+.sheet{
+  background:#FFFEF9;color:#16140F;border-radius:10px;padding:32px;
+}
+.sheet-head{text-align:center;margin-bottom:18px;}
+.sheet-head h2{margin:0 0 4px;font-size:17px;letter-spacing:0.01em;}
+.sheet-head p{margin:0;font-size:12.5px;color:#5B5648;}
+.sheet-meta{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:13px;
+  border-top:1px solid #D9D1BC;border-bottom:1px solid #D9D1BC;padding:14px 0;margin-bottom:16px;
+}
+.sheet-meta div{display:flex;justify-content:space-between;gap:10px;}
+.sheet-meta .k{color:#5B5648;}
+.sheet-meta .v{font-weight:600;}
+table.sheet-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:8px;}
+table.sheet-table th{
+  background:#F0EBDC;padding:8px 10px;text-align:left;font-size:10.5px;
+  text-transform:uppercase;letter-spacing:0.04em;color:#5B5648;border-bottom:1px solid #D9D1BC;
+}
+table.sheet-table td{padding:9px 10px;border-bottom:1px solid #ECE6D8;font-family:var(--font-mono);}
+table.sheet-table td.pname{font-family:var(--font-display);font-weight:600;}
+.sheet-totals-row td{font-weight:700;border-top:1.5px solid #16140F;border-bottom:none;}
+.sheet-foot{margin-top:14px;font-size:11px;color:#5B5648;line-height:1.6;}
+.sheet-credit{
+  display:inline-block;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:4px;
+  background:#ECE6D8;color:#5B5648;margin-left:6px;
+}
+.sheet-skip{color:#8C8470;font-style:italic;}
+.print-footer{text-align:center;margin-top:18px;font-size:12px;color:#5B5648;}
+.print-footer b{color:#16140F;}
+
+@media print{
+  body *{visibility:hidden;}
+  .sheet,.sheet *{visibility:visible;}
+  .sheet{position:absolute;left:0;top:0;width:100%;border-radius:0;}
+}
+
+.dash-actions{display:flex;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+
+/* ===== FOOTER ===== */
+.app-footer{
+  text-align:center;padding-top:36px;font-size:12px;color:var(--ink-faint);
+}
+.app-footer a{color:var(--ink-soft);}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface-2);border:1px solid var(--rule);color:var(--ink);
+  padding:12px 20px;border-radius:9px;font-size:13px;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity 0.2s,transform 0.2s;z-index:60;
+}
+.toast.is-shown{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">IA</span>
+      <div class="brand-text">
+        <h1>DU IA/CA Calculator</h1>
+        <p>Internal Assessment Tracker · NEP 2022</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn" id="startOverTopBtn" title="Clear everything and start fresh">Start Over</button>
+    </div>
+  </header>
+
+  <nav class="steps" id="stepsNav">
+    <button class="step is-active" data-step="0"><span class="num">1</span>Student Info</button>
+    <button class="step" data-step="1" disabled><span class="num">2</span>Subjects</button>
+    <button class="step" data-step="2" disabled><span class="num">3</span>Enter Marks</button>
+    <button class="step" data-step="3" disabled><span class="num">4</span>Dashboard</button>
+  </nav>
+
+  <!-- ===================== STEP 1: STUDENT INFO ===================== -->
+  <section class="view is-active" id="view-0">
+    <div class="card">
+      <p class="card-title">👤 Student Information</p>
+      <div class="field-grid">
+        <div class="field">
+          <label for="stuName">Student Name</label>
+          <input id="stuName" placeholder="e.g. Yash Bhardwaj">
+        </div>
+        <div class="field">
+          <label for="stuRoll">Roll Number</label>
+          <input id="stuRoll" placeholder="e.g. 24054563024">
+        </div>
+        <div class="field">
+          <label for="stuEnrol">Enrolment Number</label>
+          <input id="stuEnrol" placeholder="e.g. 24DAVEBSMA000031">
+        </div>
+        <div class="field">
+          <label for="stuCollege">College</label>
+          <input id="stuCollege" placeholder="e.g. P.G.D.A.V. College (Evening)">
+        </div>
+        <div class="field">
+          <label for="stuSem">Semester *</label>
+          <select id="stuSem">
+            <option value="">— Select Semester —</option>
+            <option value="1">Semester 1</option>
+            <option value="2">Semester 2</option>
+            <option value="3">Semester 3</option>
+            <option value="4">Semester 4</option>
+            <option value="5">Semester 5</option>
+            <option value="6">Semester 6</option>
+            <option value="7">Semester 7</option>
+            <option value="8">Semester 8</option>
+          </select>
+        </div>
+      </div>
+      <p class="field-note">ⓘ All fields are optional except Semester. Nothing here is sent anywhere — it stays in your browser only.</p>
+      <div class="row-actions">
+        <span></span>
+        <div class="row-actions-right">
+          <button class="btn btn-primary" id="toSubjectsBtn">Next: Add Subjects →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STEP 2: SUBJECTS ===================== -->
+  <section class="view" id="view-1">
+    <div class="card">
+      <p class="card-title">📚 Add Subjects</p>
+
+      <div class="legend">
+        <b>Credits:</b> AEC / SEC / VAC → 2 credits (IA max 10) &nbsp;|&nbsp; DSC / DSE / GE → 4 credits (IA max 30)<br>
+        <b>Components:</b>
+        <span class="tag">LT</span> Lecture + Tutorial &nbsp;
+        <span class="tag">LP</span> Lecture + Practical (practical stays hidden) &nbsp;
+        <span class="tag">P</span> Practical only (fully hidden — nothing to enter)
+      </div>
+
+      <div class="subject-form">
+        <div class="field">
+          <label>Paper Name</label>
+          <input id="subjName" placeholder="e.g. GROUP THEORY">
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <select id="subjType">
+            <option value="">Type</option>
+            <option value="DSC">DSC</option>
+            <option value="DSE">DSE</option>
+            <option value="GE">GE</option>
+            <option value="AEC">AEC</option>
+            <option value="SEC">SEC</option>
+            <option value="VAC">VAC</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Component</label>
+          <select id="subjComp">
+            <option value="LT">LT</option>
+            <option value="LP">LP</option>
+            <option value="P">P</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="addSubjectBtn">+ Add</button>
+      </div>
+
+      <div class="subject-list" id="subjectList">
+        <div class="empty-state" id="subjectEmpty">No subjects added yet. Use the form above.</div>
+      </div>
+
+      <div class="row-actions">
+        <button class="btn" id="backToInfoBtn">← Back</button>
+        <div class="row-actions-right">
+          <button class="btn btn-primary" id="toMarksBtn" disabled>Next: Enter Marks →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STEP 3: ENTER MARKS ===================== -->
+  <section class="view" id="view-2">
+    <div class="card">
+      <p class="card-title">✏️ Enter Marks</p>
+      <div id="marksContainer"></div>
+      <div class="row-actions">
+        <button class="btn" id="backToSubjectsBtn">← Back</button>
+        <div class="row-actions-right">
+          <button class="btn btn-primary" id="toDashboardBtn">View Dashboard →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STEP 4: DASHBOARD ===================== -->
+  <section class="view" id="view-3">
+    <div class="dash-actions">
+      <button class="btn" id="editMarksBtn">← Edit Marks</button>
+      <div class="row-actions-right">
+        <button class="btn btn-danger" id="startOverBtn">↺ Start Over</button>
+        <button class="btn btn-primary" id="printBtn">🖨 Print / Save PDF</button>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet"></div>
+  </section>
+
+  <footer class="app-footer">
+    <p>DU IA/CA Calculator · runs entirely in your browser · no data leaves your device · not an official University of Delhi tool</p>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   App logic — all in-memory + localStorage, no backend.
+   ============================================================ */
+(function(){
+"use strict";
+
+const STORAGE_KEY = "du_ia_calc_v1";
+
+// ---------- State ----------
+let state = {
+  student: { name:"", roll:"", enrol:"", college:"", sem:"" },
+  subjects: [], // {id, name, type, comp}
+  marks: {}     // subjectId -> {assignment, test, attendance, tutorial}
+};
+let currentStep = 0;
+
+// ---------- DOM helpers ----------
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+// ---------- Constants for the IA/Tutorial rules ----------
+const SMALL_TYPES = ["AEC","SEC","VAC"]; // IA max 10
+const BIG_TYPES = ["DSC","DSE","GE"];    // IA max 30
+
+function iaMaxFor(type){
+  return SMALL_TYPES.includes(type) ? 10 : 30;
+}
+function iaBreakdownMax(type){
+  const max = iaMaxFor(type);
+  // 40% assignment, 40% test, 20% attendance
+  return {
+    assignment: Math.round(max * 0.4),
+    test: Math.round(max * 0.4),
+    attendance: max - Math.round(max*0.4)*2
+  };
+}
+function tutorialMaxFor(){ return 40; } // only meaningful for LT papers
+function creditsFor(type){
+  return SMALL_TYPES.includes(type) ? 2 : 4;
+}
+
+// Tutorial 40-mark grade band
+function gradeForTutorial(marks){
+  if (marks == null || isNaN(marks)) return "—";
+  if (marks <= 5) return "F";
+  if (marks <= 10) return "D";
+  if (marks <= 15) return "C";
+  if (marks <= 20) return "B";
+  if (marks <= 25) return "B+";
+  if (marks <= 30) return "A";
+  if (marks <= 35) return "A+";
+  return "O";
+}
+
+let subjIdCounter = 1;
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function loadState(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && saved.subjects) {
+      state = saved;
+      subjIdCounter = (Math.max(0, ...state.subjects.map(s=>s.id)) || 0) + 1;
+    }
+  }catch(e){}
+}
+
+function showToast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("is-shown");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove("is-shown"), 2200);
+}
+
+// ============================================================
+// STEP NAVIGATION
+// ============================================================
+function goToStep(n){
+  // guard rails
+  if (n >= 1 && !state.student.sem) { showToast("Select a semester first."); return; }
+  if (n >= 2 && state.subjects.length === 0) { showToast("Add at least one subject first."); return; }
+  if (n === 3) renderDashboard();
+  if (n === 2) renderMarksEntry();
+
+  currentStep = n;
+  $$(".view").forEach((v,i)=>v.classList.toggle("is-active", i===n));
+  $$(".step").forEach((s,i)=>{
+    s.classList.toggle("is-active", i===n);
+    s.classList.toggle("is-done", i<n);
+    s.disabled = i > maxReachableStep();
+  });
+}
+function maxReachableStep(){
+  let m = 0;
+  if (state.student.sem) m = 1;
+  if (state.subjects.length > 0) m = Math.max(m, 2);
+  if (state.subjects.length > 0) m = Math.max(m, 3);
+  return m;
+}
+$$(".step").forEach((stepBtn,i)=>{
+  stepBtn.addEventListener("click", ()=>{ if(!stepBtn.disabled) goToStep(i); });
+});
+
+// ============================================================
+// STEP 1: STUDENT INFO
+// ============================================================
+const stuFields = ["stuName","stuRoll","stuEnrol","stuCollege","stuSem"];
+function bindStudentFields(){
+  $("#stuName").value = state.student.name;
+  $("#stuRoll").value = state.student.roll;
+  $("#stuEnrol").value = state.student.enrol;
+  $("#stuCollege").value = state.student.college;
+  $("#stuSem").value = state.student.sem;
+
+  $("#stuName").addEventListener("input", e=>{ state.student.name = e.target.value; saveState(); });
+  $("#stuRoll").addEventListener("input", e=>{ state.student.roll = e.target.value; saveState(); });
+  $("#stuEnrol").addEventListener("input", e=>{ state.student.enrol = e.target.value; saveState(); });
+  $("#stuCollege").addEventListener("input", e=>{ state.student.college = e.target.value; saveState(); });
+  $("#stuSem").addEventListener("change", e=>{ state.student.sem = e.target.value; saveState(); refreshStepLocks(); });
+}
+function refreshStepLocks(){
+  $$(".step").forEach((s,i)=>{ s.disabled = i > maxReachableStep(); });
+  $("#toMarksBtn").disabled = state.subjects.length === 0;
+}
+
+$("#toSubjectsBtn").addEventListener("click", ()=>{
+  if (!state.student.sem){ showToast("Please select a semester."); return; }
+  goToStep(1);
+});
+
+// ============================================================
+// STEP 2: SUBJECTS
+// ============================================================
+function addSubject(){
+  const name = $("#subjName").value.trim();
+  const type = $("#subjType").value;
+  const comp = $("#subjComp").value;
+  if (!name){ showToast("Enter a paper name."); return; }
+  if (!type){ showToast("Select a paper type."); return; }
+
+  state.subjects.push({ id: subjIdCounter++, name: name.toUpperCase(), type, comp });
+  $("#subjName").value = "";
+  $("#subjType").value = "";
+  $("#subjComp").value = "LT";
+  saveState();
+  renderSubjectList();
+  refreshStepLocks();
+}
+$("#addSubjectBtn").addEventListener("click", addSubject);
+$("#subjName").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); addSubject(); } });
+
+function removeSubject(id){
+  state.subjects = state.subjects.filter(s=>s.id!==id);
+  delete state.marks[id];
+  saveState();
+  renderSubjectList();
+  refreshStepLocks();
+}
+
+function renderSubjectList(){
+  const list = $("#subjectList");
+  const empty = $("#subjectEmpty");
+  if (state.subjects.length === 0){
+    list.innerHTML = "";
+    list.appendChild(empty);
+    return;
+  }
+  list.innerHTML = state.subjects.map(s=>{
+    const cr = creditsFor(s.type);
+    const compLabel = s.comp === "LT" ? "Lecture+Tutorial" : s.comp === "LP" ? "Lecture+Practical" : "Practical only";
+    return `
+      <div class="subject-row" data-id="${s.id}">
+        <span class="sname">${escapeHtml(s.name)}</span>
+        <div class="meta">
+          <span class="chip type-${s.type.toLowerCase()}">${s.type}</span>
+          <span class="chip">${cr} cr</span>
+          <span class="chip ${s.comp==='P'?'comp-p':''}">${s.comp} · ${compLabel}</span>
+        </div>
+        <button class="remove-btn" data-remove="${s.id}" title="Remove subject" aria-label="Remove ${escapeHtml(s.name)}">✕</button>
+      </div>
+    `;
+  }).join("");
+
+  $$('[data-remove]').forEach(btn=>{
+    btn.addEventListener("click", ()=> removeSubject(parseInt(btn.dataset.remove,10)));
+  });
+}
+
+function escapeHtml(str){
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+$("#backToInfoBtn").addEventListener("click", ()=>goToStep(0));
+$("#toMarksBtn").addEventListener("click", ()=>{
+  if (state.subjects.length === 0){ showToast("Add at least one subject."); return; }
+  goToStep(2);
+});
+
+// ============================================================
+// STEP 3: ENTER MARKS
+// ============================================================
+function renderMarksEntry(){
+  const container = $("#marksContainer");
+  container.innerHTML = state.subjects.map(s=>{
+    const m = state.marks[s.id] || { assignment:"", test:"", attendance:"", tutorial:"" };
+    state.marks[s.id] = m;
+
+    if (s.comp === "P"){
+      return `
+        <div class="paper-card">
+          <div class="paper-card-top">
+            <h3>${escapeHtml(s.name)}</h3>
+            <div class="chips"><span class="chip type-${s.type.toLowerCase()}">${s.type}</span><span class="chip">${s.comp}</span></div>
+          </div>
+          <p class="skip-note">This paper is fully practical. Marks for practical-only papers are not released to students by DU — nothing to enter here.</p>
+        </div>
+      `;
+    }
+
+    const bk = iaBreakdownMax(s.type);
+    const iaMax = iaMaxFor(s.type);
+    return `
+      <div class="paper-card" data-subj="${s.id}">
+        <div class="paper-card-top">
+          <h3>${escapeHtml(s.name)}</h3>
+          <div class="chips">
+            <span class="chip type-${s.type.toLowerCase()}">${s.type}</span>
+            <span class="chip">${s.comp}</span>
+            <span class="chip">IA /${iaMax}</span>
+          </div>
+        </div>
+
+        <div class="ia-grid">
+          <div class="ia-field">
+            <label>Assignment <span class="max">/${bk.assignment}</span></label>
+            <input type="number" min="0" max="${bk.assignment}" data-field="assignment" data-subj="${s.id}" value="${m.assignment}" placeholder="0–${bk.assignment}">
+          </div>
+          <div class="ia-field">
+            <label>Class Test <span class="max">/${bk.test}</span></label>
+            <input type="number" min="0" max="${bk.test}" data-field="test" data-subj="${s.id}" value="${m.test}" placeholder="0–${bk.test}">
+          </div>
+          <div class="ia-field">
+            <label>Attendance <span class="max">/${bk.attendance}</span></label>
+            <input type="number" min="0" max="${bk.attendance}" data-field="attendance" data-subj="${s.id}" value="${m.attendance}" placeholder="0–${bk.attendance}">
+          </div>
+        </div>
+
+        <div class="ia-total">
+          <span class="label">IA Total</span>
+          <span class="value" id="iaTotal-${s.id}">— / ${iaMax}</span>
+        </div>
+
+        ${s.comp === "LT" ? `
+        <div class="tut-grid">
+          <div class="ia-field">
+            <label>Tutorial Marks <span class="max">/${tutorialMaxFor()}</span></label>
+            <input type="number" min="0" max="40" data-field="tutorial" data-subj="${s.id}" value="${m.tutorial}" placeholder="0–40">
+          </div>
+          <div class="tut-grade" id="tutGrade-${s.id}">—</div>
+        </div>
+        ` : `<p class="skip-note">Practical component (40 marks) is not released to students — Lecture-side IA only is tracked above.</p>`}
+      </div>
+    `;
+  }).join("");
+
+  $$("#marksContainer input").forEach(input=>{
+    input.addEventListener("input", onMarkInput);
+  });
+
+  state.subjects.forEach(s=>{ if (s.comp!=="P") updateIaTotal(s.id); });
+}
+
+function onMarkInput(e){
+  const subjId = parseInt(e.target.dataset.subj,10);
+  const field = e.target.dataset.field;
+  const subj = state.subjects.find(s=>s.id===subjId);
+  const max = field === "tutorial" ? tutorialMaxFor() : iaBreakdownMax(subj.type)[field];
+  let val = e.target.value;
+
+  if (val !== "" ){
+    let num = parseFloat(val);
+    if (isNaN(num)) num = "";
+    else if (num < 0) num = 0;
+    else if (num > max) num = max;
+    val = num;
+    e.target.value = val;
+  }
+
+  state.marks[subjId][field] = val;
+  saveState();
+  if (field === "tutorial") updateTutGrade(subjId);
+  else updateIaTotal(subjId);
+}
+
+function updateIaTotal(subjId){
+  const subj = state.subjects.find(s=>s.id===subjId);
+  const m = state.marks[subjId];
+  const iaMax = iaMaxFor(subj.type);
+  const a = parseFloat(m.assignment), t = parseFloat(m.test), at = parseFloat(m.attendance);
+  const vals = [a,t,at].filter(v=>!isNaN(v));
+  const el = $(`#iaTotal-${subjId}`);
+  if (!el) return;
+  if (vals.length === 0){
+    el.textContent = `— / ${iaMax}`;
+    el.className = "value";
+    return;
+  }
+  const sum = vals.reduce((x,y)=>x+y,0);
+  el.textContent = `${sum} / ${iaMax}`;
+  el.className = "value " + (sum <= iaMax ? "ok" : "over");
+}
+
+function updateTutGrade(subjId){
+  const m = state.marks[subjId];
+  const el = $(`#tutGrade-${subjId}`);
+  if (!el) return;
+  const num = parseFloat(m.tutorial);
+  el.textContent = isNaN(num) ? "—" : gradeForTutorial(num);
+}
+
+$("#backToSubjectsBtn").addEventListener("click", ()=>goToStep(1));
+$("#toDashboardBtn").addEventListener("click", ()=>goToStep(3));
+
+// ============================================================
+// STEP 4: DASHBOARD / MARKSHEET
+// ============================================================
+function semWord(n){
+  const words=["","First","Second","Third","Fourth","Fifth","Sixth","Seventh","Eighth"];
+  return words[n] || n;
+}
+
+function renderDashboard(){
+  const s = state.student;
+  const rows = state.subjects.map(subj=>{
+    const cr = creditsFor(subj.type);
+    const iaMax = iaMaxFor(subj.type);
+    if (subj.comp === "P"){
+      return `
+        <tr>
+          <td class="pname">${escapeHtml(subj.name)}<span class="sheet-credit">${subj.type}</span></td>
+          <td>${cr}</td>
+          <td>${subj.comp}</td>
+          <td colspan="3" class="sheet-skip">Practical-only — not released to students</td>
+        </tr>
+      `;
+    }
+    const m = state.marks[subj.id] || {};
+    const a = numOrDash(m.assignment), t = numOrDash(m.test), at = numOrDash(m.attendance);
+    const vals = [m.assignment,m.test,m.attendance].map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+    const iaSum = vals.length ? vals.reduce((x,y)=>x+y,0) : null;
+    const tut = subj.comp === "LT" ? m.tutorial : null;
+    const tutNum = parseFloat(tut);
+    const tutGrade = subj.comp === "LT" ? gradeForTutorial(isNaN(tutNum)?null:tutNum) : "—";
+
+    return `
+      <tr>
+        <td class="pname">${escapeHtml(subj.name)}<span class="sheet-credit">${subj.type}</span></td>
+        <td>${cr}</td>
+        <td>${subj.comp}</td>
+        <td>${a} + ${t} + ${at} = <b>${iaSum===null?"—":iaSum}</b> / ${iaMax}</td>
+        <td>${subj.comp==="LT" ? (isNaN(tutNum) ? "—" : tutNum) + " / 40" : "— (practical, hidden)"}</td>
+        <td>${tutGrade}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const totalIaMax = state.subjects.filter(x=>x.comp!=="P").reduce((sum,x)=>sum+iaMaxFor(x.type),0);
+  const totalIaScored = state.subjects.filter(x=>x.comp!=="P").reduce((sum,x)=>{
+    const m = state.marks[x.id]||{};
+    const vals=[m.assignment,m.test,m.attendance].map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+    return sum + (vals.length?vals.reduce((a,b)=>a+b,0):0);
+  },0);
+
+  $("#sheet").innerHTML = `
+    <div class="sheet-head">
+      <h2>UNIVERSITY OF DELHI — INTERNAL ASSESSMENT STATEMENT</h2>
+      <p>Self-tracked IA / CA marks · NEP 2022 · Not an official document</p>
+    </div>
+    <div class="sheet-meta">
+      <div><span class="k">Name</span><span class="v">${escapeHtml(s.name)||"—"}</span></div>
+      <div><span class="k">Roll No.</span><span class="v">${escapeHtml(s.roll)||"—"}</span></div>
+      <div><span class="k">Enrolment No.</span><span class="v">${escapeHtml(s.enrol)||"—"}</span></div>
+      <div><span class="k">College</span><span class="v">${escapeHtml(s.college)||"—"}</span></div>
+      <div><span class="k">Semester</span><span class="v">${semWord(s.sem)} Semester</span></div>
+      <div><span class="k">Total IA Tracked</span><span class="v">${totalIaScored} / ${totalIaMax}</span></div>
+    </div>
+
+    <table class="sheet-table">
+      <thead>
+        <tr>
+          <th>Paper</th><th>Credits</th><th>Comp.</th>
+          <th>IA Breakdown (A+T+At)</th><th>Tutorial</th><th>Tut. Grade</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr class="sheet-totals-row">
+          <td colspan="3">Totals →</td>
+          <td>${totalIaScored} / ${totalIaMax}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <p class="sheet-foot">
+      IA max is 10 for AEC/SEC/VAC papers and 30 for DSC/DSE/GE papers, split 40% Assignment · 40% Class Test · 20% Attendance.
+      Tutorial is graded out of 40 on bands of 5 (0–5 F, 5–10 D, 10–15 C, 15–20 B, 20–25 B+, 25–30 A, 30–35 A+, 35–40 O).
+      Practical components are never released to students by the University and are therefore excluded from this tracker.
+    </p>
+    <p class="print-footer">Self-tracked IA/CA marks · generated locally · <b>not an official University of Delhi document</b></p>
+  `;
+}
+
+function numOrDash(v){
+  const n = parseFloat(v);
+  return isNaN(n) ? "—" : n;
+}
+
+$("#editMarksBtn").addEventListener("click", ()=>goToStep(2));
+$("#printBtn").addEventListener("click", ()=>window.print());
+
+function doStartOver(){
+  if (!confirm("Clear all student info, subjects, and marks? This cannot be undone.")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = { student:{name:"",roll:"",enrol:"",college:"",sem:""}, subjects:[], marks:{} };
+  subjIdCounter = 1;
+  bindValuesAfterReset();
+  goToStep(0);
+  showToast("Cleared. Starting fresh.");
+}
+function bindValuesAfterReset(){
+  $("#stuName").value=""; $("#stuRoll").value=""; $("#stuEnrol").value="";
+  $("#stuCollege").value=""; $("#stuSem").value="";
+  renderSubjectList();
+}
+$("#startOverBtn").addEventListener("click", doStartOver);
+$("#startOverTopBtn").addEventListener("click", doStartOver);
+
+// ============================================================
+// INIT
+// ============================================================
+function init(){
+  loadState();
+  bindStudentFields();
+  renderSubjectList();
+  refreshStepLocks();
+  goToStep(0);
+}
+document.addEventListener("DOMContentLoaded", init);
+
+})();
+</script>
+</body>
+</html>
